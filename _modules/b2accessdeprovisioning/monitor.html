@@ -1,0 +1,177 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>b2accessdeprovisioning.monitor &#8212; b2accessdeprovisioning 0.9.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.9.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for b2accessdeprovisioning.monitor</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">timedelta</span><span class="p">,</span> <span class="n">datetime</span>
+
+<span class="kn">import</span> <span class="nn">unityapiclient</span>
+<span class="kn">from</span> <span class="nn">unityapiclient.client</span> <span class="k">import</span> <span class="n">UnityApiClient</span>
+
+<span class="kn">from</span> <span class="nn">b2accessdeprovisioning.configparser</span> <span class="k">import</span> <span class="n">config</span>
+<span class="kn">from</span> <span class="nn">b2accessdeprovisioning.user</span> <span class="k">import</span> <span class="n">User</span>
+<span class="kn">from</span> <span class="nn">b2accessdeprovisioning.notifier</span> <span class="k">import</span> <span class="n">MailNotifier</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">b2access</span> <span class="o">=</span> <span class="n">UnityApiClient</span><span class="p">(</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;api&#39;</span><span class="p">][</span><span class="s1">&#39;base_url&#39;</span><span class="p">],</span>
+    <span class="n">auth</span><span class="o">=</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;api&#39;</span><span class="p">][</span><span class="s1">&#39;user&#39;</span><span class="p">],</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;api&#39;</span><span class="p">][</span><span class="s1">&#39;password&#39;</span><span class="p">]),</span>
+    <span class="n">cert_verify</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;api&#39;</span><span class="p">][</span><span class="s1">&#39;cert_verify&#39;</span><span class="p">])</span>
+
+<span class="n">notifier</span> <span class="o">=</span> <span class="n">MailNotifier</span><span class="p">(</span>
+    <span class="n">host</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;notifications&#39;</span><span class="p">][</span><span class="s1">&#39;email&#39;</span><span class="p">][</span><span class="s1">&#39;host&#39;</span><span class="p">],</span>
+    <span class="n">port</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;notifications&#39;</span><span class="p">][</span><span class="s1">&#39;email&#39;</span><span class="p">][</span><span class="s1">&#39;port&#39;</span><span class="p">],</span>
+    <span class="n">use_tls</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;notifications&#39;</span><span class="p">][</span><span class="s1">&#39;email&#39;</span><span class="p">][</span><span class="s1">&#39;use_tls&#39;</span><span class="p">],</span>
+    <span class="n">user</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;notifications&#39;</span><span class="p">][</span><span class="s1">&#39;email&#39;</span><span class="p">][</span><span class="s1">&#39;user&#39;</span><span class="p">],</span>
+    <span class="n">password</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;notifications&#39;</span><span class="p">][</span><span class="s1">&#39;email&#39;</span><span class="p">][</span><span class="s1">&#39;password&#39;</span><span class="p">])</span>
+
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../monitor.html#b2accessdeprovisioning.monitor.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">groups</span> <span class="o">=</span> <span class="n">b2access</span><span class="o">.</span><span class="n">get_group</span><span class="p">()</span>
+    <span class="n">users</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">member_id</span> <span class="ow">in</span> <span class="n">groups</span><span class="p">[</span><span class="s1">&#39;members&#39;</span><span class="p">]:</span>
+        <span class="n">entity</span> <span class="o">=</span> <span class="n">b2access</span><span class="o">.</span><span class="n">get_entity</span><span class="p">(</span><span class="n">member_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">entity</span><span class="p">[</span><span class="s1">&#39;entityInformation&#39;</span><span class="p">][</span><span class="s1">&#39;state&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;disabled&#39;</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">entity</span><span class="p">[</span><span class="s1">&#39;entityInformation&#39;</span><span class="p">][</span><span class="s1">&#39;scheduledOperation&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;REMOVE&#39;</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">user</span> <span class="o">=</span> <span class="n">User</span><span class="p">(</span><span class="n">internal_id</span><span class="o">=</span><span class="n">member_id</span><span class="p">)</span>
+        <span class="n">users</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">identity</span> <span class="ow">in</span> <span class="n">entity</span><span class="p">[</span><span class="s1">&#39;identities&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">identity</span><span class="p">[</span><span class="s1">&#39;typeId&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;persistent&#39;</span><span class="p">:</span>
+                <span class="n">user</span><span class="o">.</span><span class="n">shared_id</span> <span class="o">=</span> <span class="n">identity</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span>
+                <span class="k">break</span>
+
+    <span class="k">for</span> <span class="n">user</span> <span class="ow">in</span> <span class="n">users</span><span class="p">:</span>
+        <span class="n">_remove_user_attrs</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+        <span class="n">_schedule_user_removal</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+        
+    <span class="k">if</span> <span class="n">users</span><span class="p">:</span>
+        <span class="n">_send_notification</span><span class="p">(</span><span class="n">users</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">_remove_user_attrs</span><span class="p">(</span><span class="n">user</span><span class="p">):</span>
+    <span class="n">attr_whitelist</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;attr_whitelist&#39;</span><span class="p">]</span>
+
+    <span class="n">attrs</span> <span class="o">=</span> <span class="n">b2access</span><span class="o">.</span><span class="n">get_entity_attrs</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">internal_id</span><span class="p">,</span> <span class="n">effective</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">attrs</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="s1">&#39;name&#39;</span> <span class="ow">in</span> <span class="n">attr</span> <span class="ow">and</span> <span class="n">attr</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">attr_whitelist</span> <span class="ow">and</span>
+            <span class="n">attr</span><span class="p">[</span><span class="s1">&#39;visibility&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;full&#39;</span><span class="p">):</span>
+            <span class="n">b2access</span><span class="o">.</span><span class="n">remove_entity_attr</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">internal_id</span><span class="p">,</span> <span class="n">attr</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
+
+
+<span class="k">def</span> <span class="nf">_schedule_user_removal</span><span class="p">(</span><span class="n">user</span><span class="p">):</span>
+    <span class="n">when</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;retention_period&#39;</span><span class="p">])</span>
+    <span class="n">b2access</span><span class="o">.</span><span class="n">schedule_operation</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">internal_id</span><span class="p">,</span> <span class="n">operation</span><span class="o">=</span><span class="s1">&#39;REMOVE&#39;</span><span class="p">,</span>
+                                <span class="n">when</span><span class="o">=</span><span class="n">when</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_send_notification</span><span class="p">(</span><span class="n">users</span><span class="o">=</span><span class="p">[]):</span>
+    <span class="n">account_details</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">user</span> <span class="ow">in</span> <span class="n">users</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">user</span><span class="o">.</span><span class="n">shared_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">account_details</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">shared_id</span><span class="p">})</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">account_details</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="n">attachments</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">attachment</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">attachment</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;users.json&#39;</span>
+    <span class="n">attachment</span><span class="p">[</span><span class="s1">&#39;message&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">account_details</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                       <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;: &#39;</span><span class="p">))</span>
+    <span class="n">attachments</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">attachment</span><span class="p">)</span>
+    <span class="n">notifier</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;notifications&#39;</span><span class="p">][</span><span class="s1">&#39;email&#39;</span><span class="p">][</span><span class="s1">&#39;from&#39;</span><span class="p">],</span> 
+                  <span class="n">config</span><span class="p">[</span><span class="s1">&#39;notifications&#39;</span><span class="p">][</span><span class="s1">&#39;email&#39;</span><span class="p">][</span><span class="s1">&#39;to&#39;</span><span class="p">],</span>
+                  <span class="n">config</span><span class="p">[</span><span class="s1">&#39;notifications&#39;</span><span class="p">][</span><span class="s1">&#39;email&#39;</span><span class="p">][</span><span class="s1">&#39;subject&#39;</span><span class="p">],</span> 
+                  <span class="n">config</span><span class="p">[</span><span class="s1">&#39;notifications&#39;</span><span class="p">][</span><span class="s1">&#39;email&#39;</span><span class="p">][</span><span class="s1">&#39;intro_text&#39;</span><span class="p">],</span>
+                  <span class="n">attachments</span><span class="p">)</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016-2017, GRNET S.A..
+      
+    </div>
+
+    
+    <a href="https://github.com/EUDAT-B2ACCESS/b2access-deprovisioning" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>
