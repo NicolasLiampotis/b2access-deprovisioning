@@ -26,6 +26,11 @@ notifier = MailNotifier(
     user=config['notifications']['email']['user'],
     password=config['notifications']['email']['password'])
 
+if 'dry_run' in config:
+    dry_run = config['dry_run']
+else:
+    dry_run = False
+
 def main():
     groups = b2access.get_group()
     users = []
@@ -57,13 +62,15 @@ def _remove_user_attrs(user):
     for attr in attrs:
         if ('name' in attr and attr['name'] not in attr_whitelist and
             attr['visibility'] == 'full'):
-            b2access.remove_entity_attr(user.internal_id, attr['name'])
+            if not dry_run:
+                b2access.remove_entity_attr(user.internal_id, attr['name'])
 
 
 def _schedule_user_removal(user):
     when = datetime.utcnow() + timedelta(days=config['retention_period'])
-    b2access.schedule_operation(user.internal_id, operation='REMOVE',
-                                when=when)
+    if not dry_run:
+        b2access.schedule_operation(user.internal_id, operation='REMOVE',
+                                    when=when)
 
 
 def _send_notification(users=[]):
@@ -79,11 +86,12 @@ def _send_notification(users=[]):
     attachment['message'] = json.dumps(account_details, sort_keys=True,
                                        indent=4, separators=(',', ': '))
     attachments.append(attachment)
-    notifier.send(config['notifications']['email']['from'], 
-                  config['notifications']['email']['to'],
-                  config['notifications']['email']['subject'], 
-                  config['notifications']['email']['intro_text'],
-                  attachments)
+    if not dry_run:
+        notifier.send(config['notifications']['email']['from'], 
+                      config['notifications']['email']['to'],
+                      config['notifications']['email']['subject'], 
+                      config['notifications']['email']['intro_text'],
+                      attachments)
 
 
 if __name__ == "__main__":
