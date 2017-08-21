@@ -62,12 +62,16 @@ def _remove_user_attrs(user):
     for attr in attrs:
         if ('name' in attr and attr['name'] not in attr_whitelist and
             attr['visibility'] == 'full'):
+            logger.debug("removing attribute '%s' from entity '%s'",
+                        attr['name'], user.internal_id)
             if not dry_run:
                 b2access.remove_entity_attr(user.internal_id, attr['name'])
 
 
 def _schedule_user_removal(user):
     when = datetime.utcnow() + timedelta(days=config['retention_period'])
+    logger.debug("scheduling removal of entity '%s' at '%s'",
+                user.internal_id, when)
     if not dry_run:
         b2access.schedule_operation(user.internal_id, operation='REMOVE',
                                     when=when)
@@ -86,6 +90,12 @@ def _send_notification(users=[]):
     attachment['message'] = json.dumps(account_details, sort_keys=True,
                                        indent=4, separators=(',', ': '))
     attachments.append(attachment)
+    logger.debug("sending email notification from address '%s' to '%s' "
+        "with subject '%s' and attachment users.json:\n%s",
+                config['notifications']['email']['from'],
+                config['notifications']['email']['to'],
+                config['notifications']['email']['subject'],
+                attachment['message'])
     if not dry_run:
         notifier.send(config['notifications']['email']['from'], 
                       config['notifications']['email']['to'],
