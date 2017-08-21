@@ -13,6 +13,8 @@ from b2accessdeprovisioning.user import User
 from b2accessdeprovisioning.notifier import MailNotifier
 
 logger = logging.getLogger(__name__)
+if 'log_level' in config:
+    logging.basicConfig(level=logging.getLevelName(config['log_level']))
 
 b2access = UnityApiClient(
     config['api']['base_url'],
